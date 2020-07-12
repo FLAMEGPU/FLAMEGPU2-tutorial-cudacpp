@@ -189,7 +189,6 @@ FLAMEGPU_AGENT_FUNCTION(pred_eat_or_starve, MsgBruteForce, MsgNone) {
     for (const auto& msg : FLAMEGPU->message_in) {
 	if (msg.getVariable<int>("pred_id") == predator_id) {
 	    predator_life += GAIN_FROM_FOOD_PREDATOR;
-            printf("Prey eaten");
         }	    	
     }
 
@@ -397,7 +396,6 @@ FLAMEGPU_AGENT_FUNCTION(prey_eaten, MsgBruteForce, MsgBruteForce) {
     if (eaten) {
 	FLAMEGPU->message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
 	FLAMEGPU->message_out.setVariable<int>("pred_id", predator_id);
-        printf("%d eaten by %d \n", FLAMEGPU->getVariable<int>("id"), predator_id);
     }
     
     return eaten ? DEAD : ALIVE;
