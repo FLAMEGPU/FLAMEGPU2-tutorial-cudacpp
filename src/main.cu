@@ -18,9 +18,9 @@
 #define MIN_POSITION -1.0f
 #define MAX_POSITION 1.0f
 #define PREY_GROUP_COHESION_RADIUS 0.2f
-#define REPRODUCE_PREY_PROB 0.05f
-#define REPRODUCE_PREDATOR_PROB 0.03f
-#define GAIN_FROM_FOOD_PREDATOR 50
+//#define REPRODUCE_PREY_PROB 0.05f
+//#define REPRODUCE_PREDATOR_PROB 0.03f
+//#define GAIN_FROM_FOOD_PREDATOR 50
 
 typedef struct CSVRow {
     int preyPop;
@@ -188,7 +188,7 @@ FLAMEGPU_AGENT_FUNCTION(pred_eat_or_starve, MsgBruteForce, MsgNone) {
     // Iterate prey_eaten messages to see if this predator ate a prey
     for (const auto& msg : FLAMEGPU->message_in) {
 	if (msg.getVariable<int>("pred_id") == predator_id) {
-	    predator_life += GAIN_FROM_FOOD_PREDATOR;
+	    predator_life += FLAMEGPU->environment.get<int>("GAIN_FROM_FOOD_PREDATOR");
         }	    	
     }
 
@@ -206,7 +206,7 @@ FLAMEGPU_AGENT_FUNCTION(pred_eat_or_starve, MsgBruteForce, MsgNone) {
 FLAMEGPU_AGENT_FUNCTION(pred_reproduction, MsgNone, MsgNone) {
     float random = FLAMEGPU->random.uniform<float>();
     const int currentLife = FLAMEGPU->getVariable<int>("life");
-    if (random < REPRODUCE_PREDATOR_PROB) {
+    if (random < FLAMEGPU->environment.get<float>("REPRODUCE_PREDATOR_PROB")) {
         int id = FLAMEGPU->random.uniform<float>() * (float)INT_MAX;
 	float x = FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH - BOUNDS_WIDTH / 2.0f;
 	float y = FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH - BOUNDS_WIDTH / 2.0f;
@@ -410,9 +410,10 @@ FLAMEGPU_AGENT_FUNCTION(prey_eat_or_starve, MsgBruteForce, MsgNone) {
 }
 
 FLAMEGPU_AGENT_FUNCTION(prey_reproduction, MsgNone, MsgNone) {
+    printf("Pred pop: %d \n", FLAMEGPU->environment.get<int>("NUM_PREDATORS"));
     float random = FLAMEGPU->random.uniform<float>();
     const int currentLife = FLAMEGPU->getVariable<int>("life");
-    if (random < REPRODUCE_PREY_PROB) {
+    if (random < FLAMEGPU->environment.get<float>("REPRODUCE_PREY_PROB")) {
         int id = FLAMEGPU->random.uniform<float>() * (float)INT_MAX;
 	float x = FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH - BOUNDS_WIDTH / 2.0f;
 	float y = FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH - BOUNDS_WIDTH / 2.0f;
@@ -577,10 +578,10 @@ int main(int argc, const char ** argv) {
     
         EnvironmentDescription &env = model.Environment();
         // TODO: Move defines to here
-        //env.add<float>("REPRODUCE_PREY_PROB", 0.05f);
-	//env.add<float>("REPRODUCE_PREDATOR_PROB", 0.03f);
-//	env.add<int>("GAIN_FROM_FOOD_PREDATOR", 75);
-        //env.add<int>("NUM_PREDATORS", 400);
+        env.add<float>("REPRODUCE_PREY_PROB", 0.05f);
+	env.add<float>("REPRODUCE_PREDATOR_PROB", 0.03f);
+	env.add<int>("GAIN_FROM_FOOD_PREDATOR", 50);
+        env.add<int>("NUM_PREDATORS", 400);
         //env.add<int>("NUM_PREY", 800);
 	//env.add("GAIN_FROM_FOOD_PREY", 50);
 	//env.add("GRASS_REGROW_CYCLES", 100);
@@ -653,10 +654,10 @@ int main(int argc, const char ** argv) {
     std::uniform_real_distribution<> floatDist(-1.0f, 1.0f);
     std::uniform_real_distribution<> predLifeDist(0, 40);
     std::uniform_real_distribution<> preyLifeDist(0, 50);
-    int numPredators = 400; //env.get<int>("NUM_PREDATORS");
+    int numPredators = env.get<int>("NUM_PREDATORS");
     std::cout << "Num predators: " << numPredators << std::endl;
-    AgentPopulation predatorPopulation(model.Agent("predator"), 400);
-    for (int i = 0; i < 400; i++) {
+    AgentPopulation predatorPopulation(model.Agent("predator"), numPredators);
+    for (int i = 0; i < numPredators; i++) {
         AgentInstance predator = predatorPopulation.getNextInstance();
         predator.setVariable<int>("id", i);
         predator.setVariable<float>("x", floatDist(gen));
