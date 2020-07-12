@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <random>
 
 #include "flamegpu/flame_api.h"
 #include "flamegpu/runtime/flamegpu_api.h"
@@ -12,14 +13,14 @@
 #define SAME_SPECIES_AVOIDANCE_RADIUS 0.035f
 #define DELTA_TIME 0.001f
 #define PRED_SPEED_ADVANTAGE 2.0f
-#define GAIN_FROM_FOOD_PREDATOR 50 
 #define PRED_KILL_DISTANCE 0.02f
-#define REPRODUCE_PREY_PROB 0.05f
-#define REPRODUCE_PRED_PROB 0.03f
 #define BOUNDS_WIDTH 2.0f
 #define MIN_POSITION -1.0f
 #define MAX_POSITION 1.0f
 #define PREY_GROUP_COHESION_RADIUS 0.2f
+#define REPRODUCE_PREY_PROB 0.05f
+#define REPRODUCE_PREDATOR_PROB 0.03f
+#define GAIN_FROM_FOOD_PREDATOR 50
 
 typedef struct CSVRow {
     int preyPop;
@@ -37,8 +38,7 @@ FLAMEGPU_STEP_FUNCTION(recordPopulation) {
     csvData.push_back(row);
 }
 
-//FLAMEGPU_EXIT_FUNCTION(savePopulationData) {
-void savePopulationData() {
+FLAMEGPU_EXIT_FUNCTION(savePopulationData) {
     std::ofstream outputFile;
     outputFile.open("iterations/PreyPred_Count.csv");
     if (outputFile.is_open()) { 
@@ -48,6 +48,7 @@ void savePopulationData() {
     } else {
 	std::cout << "Failed to open file for saving population data!";
     }
+    std::cout << "Data saved" << std::endl;
 }
 
 // FLAMEGPU_AGENT_FUNCTION(function_name, input_message_type, output_message_type)
@@ -188,6 +189,7 @@ FLAMEGPU_AGENT_FUNCTION(pred_eat_or_starve, MsgBruteForce, MsgNone) {
     for (const auto& msg : FLAMEGPU->message_in) {
 	if (msg.getVariable<int>("pred_id") == predator_id) {
 	    predator_life += GAIN_FROM_FOOD_PREDATOR;
+            printf("Prey eaten");
         }	    	
     }
 
@@ -205,7 +207,7 @@ FLAMEGPU_AGENT_FUNCTION(pred_eat_or_starve, MsgBruteForce, MsgNone) {
 FLAMEGPU_AGENT_FUNCTION(pred_reproduction, MsgNone, MsgNone) {
     float random = FLAMEGPU->random.uniform<float>();
     const int currentLife = FLAMEGPU->getVariable<int>("life");
-    if (random < REPRODUCE_PRED_PROB) {
+    if (random < REPRODUCE_PREDATOR_PROB) {
         int id = FLAMEGPU->random.uniform<float>() * (float)INT_MAX;
 	float x = FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH - BOUNDS_WIDTH / 2.0f;
 	float y = FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH - BOUNDS_WIDTH / 2.0f;
@@ -395,6 +397,7 @@ FLAMEGPU_AGENT_FUNCTION(prey_eaten, MsgBruteForce, MsgBruteForce) {
     if (eaten) {
 	FLAMEGPU->message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
 	FLAMEGPU->message_out.setVariable<int>("pred_id", predator_id);
+        printf("%d eaten by %d \n", FLAMEGPU->getVariable<int>("id"), predator_id);
     }
     
     return eaten ? DEAD : ALIVE;
@@ -411,7 +414,7 @@ FLAMEGPU_AGENT_FUNCTION(prey_eat_or_starve, MsgBruteForce, MsgNone) {
 FLAMEGPU_AGENT_FUNCTION(prey_reproduction, MsgNone, MsgNone) {
     float random = FLAMEGPU->random.uniform<float>();
     const int currentLife = FLAMEGPU->getVariable<int>("life");
-    if (random < REPRODUCE_PRED_PROB) {
+    if (random < REPRODUCE_PREY_PROB) {
         int id = FLAMEGPU->random.uniform<float>() * (float)INT_MAX;
 	float x = FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH - BOUNDS_WIDTH / 2.0f;
 	float y = FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH - BOUNDS_WIDTH / 2.0f;
@@ -573,15 +576,17 @@ int main(int argc, const char ** argv) {
    /**
      * ENVIRONMENT VARIABLES 
      */
-    {
+    
         EnvironmentDescription &env = model.Environment();
         // TODO: Move defines to here
-        //env.add("REPRODUCE_PREY_PROB", 0.05f);
-	//env.add("REPRODUCE_PREDATOR_PROB", 0.03f);
-	//env.add("GAIN_FROM_FOOD_PREDATOR", 75);
+        //env.add<float>("REPRODUCE_PREY_PROB", 0.05f);
+	//env.add<float>("REPRODUCE_PREDATOR_PROB", 0.03f);
+//	env.add<int>("GAIN_FROM_FOOD_PREDATOR", 75);
+        //env.add<int>("NUM_PREDATORS", 400);
+        //env.add<int>("NUM_PREY", 800);
 	//env.add("GAIN_FROM_FOOD_PREY", 50);
 	//env.add("GRASS_REGROW_CYCLES", 100);
-    }
+     
 
     /**
      * Control flow
@@ -625,7 +630,7 @@ int main(int argc, const char ** argv) {
     }
 
     model.addStepFunction(recordPopulation);
-    //model.addExitFunction(savePopulationData);
+    model.addExitFunction(savePopulationData);
     NVTX_POP();
 
     /**
@@ -639,28 +644,61 @@ int main(int argc, const char ** argv) {
      * Initialisation
      */
     cuda_model.initialise(argc, argv);
+
     if (cuda_model.getSimulationConfig().xml_input_file.empty()) {
 	printf("XML Input was empty!");
     }
+
+    // Initialise predator agents
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> floatDist(-1.0f, 1.0f);
+    std::uniform_real_distribution<> predLifeDist(0, 40);
+    std::uniform_real_distribution<> preyLifeDist(0, 50);
+    int numPredators = 400; //env.get<int>("NUM_PREDATORS");
+    std::cout << "Num predators: " << numPredators << std::endl;
+    AgentPopulation predatorPopulation(model.Agent("predator"), 400);
+    for (int i = 0; i < 400; i++) {
+        AgentInstance predator = predatorPopulation.getNextInstance();
+        predator.setVariable<int>("id", i);
+        predator.setVariable<float>("x", floatDist(gen));
+        predator.setVariable<float>("y", floatDist(gen));
+        predator.setVariable<float>("vx", floatDist(gen));
+        predator.setVariable<float>("vy", floatDist(gen));
+        predator.setVariable<float>("steer_x", 0.0f);
+        predator.setVariable<float>("steer_y", 0.0f);
+        predator.setVariable<float>("type", 0.0f);
+	predator.setVariable<int>("life", predLifeDist(gen));
+    }
+  
+    // Initialise prey agents 
+   // int numPrey =  800; // env.get<int>("NUM_PREY");
+    //std::cout << "Num prey: " << numPrey << std::endl;
+    AgentPopulation preyPopulation(model.Agent("prey"), 800);
+    for (int i = 0; i < 800; i++) {
+        AgentInstance prey = preyPopulation.getNextInstance();
+        prey.setVariable<int>("id", i);
+        prey.setVariable<float>("x", floatDist(gen));
+        prey.setVariable<float>("y", floatDist(gen));
+        prey.setVariable<float>("vx", floatDist(gen));
+        prey.setVariable<float>("vy", floatDist(gen));
+        prey.setVariable<float>("steer_x", 0.0f);
+        prey.setVariable<float>("steer_y", 0.0f);
+        prey.setVariable<float>("type", 1.0f);
+	prey.setVariable<int>("life", preyLifeDist(gen));
+    }
+
+    cuda_model.setPopulationData(predatorPopulation);
+    cuda_model.setPopulationData(preyPopulation);
 
 
     /**
      * Execution
      */
     printf("Model initialised, beginning simulation...\n");
-    printf("Step counter: %d\n Simulation Steps: %d", cuda_model.getStepCounter(), cuda_model.getSimulationConfig().steps);
-     
-    while (cuda_model.getStepCounter() < cuda_model.getSimulationConfig().steps && cuda_model.step()) {
-        //   cuda_model.getPopulationData(cell_pop);
-        //  printPopulation(cell_pop);
-        // getchar();
-    }
-
-   /**
-    * Export Pop
-    */
-   // TODO
-    savePopulationData();
-   return 0;
+    cuda_model.simulate(); 
+    printf("Simulation complete\n");
+   
+    return 0;
 }
 
