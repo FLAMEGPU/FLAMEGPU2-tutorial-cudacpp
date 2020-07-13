@@ -18,6 +18,8 @@
 #define MIN_POSITION -1.0f
 #define MAX_POSITION 1.0f
 #define PREY_GROUP_COHESION_RADIUS 0.2f
+#define GRASS_EAT_DISTANCE 0.02f
+#define GRASS_REGROW_CYCLES 100
 //#define REPRODUCE_PREY_PROB 0.05f
 //#define REPRODUCE_PREDATOR_PROB 0.03f
 //#define GAIN_FROM_FOOD_PREDATOR 50
@@ -410,7 +412,6 @@ FLAMEGPU_AGENT_FUNCTION(prey_eat_or_starve, MsgBruteForce, MsgNone) {
 }
 
 FLAMEGPU_AGENT_FUNCTION(prey_reproduction, MsgNone, MsgNone) {
-    printf("Pred pop: %d \n", FLAMEGPU->environment.get<int>("NUM_PREDATORS"));
     float random = FLAMEGPU->random.uniform<float>();
     const int currentLife = FLAMEGPU->getVariable<int>("life");
     if (random < FLAMEGPU->environment.get<float>("REPRODUCE_PREY_PROB")) {
@@ -439,18 +440,71 @@ FLAMEGPU_AGENT_FUNCTION(prey_reproduction, MsgNone, MsgNone) {
 // Grass functions
 FLAMEGPU_AGENT_FUNCTION(grass_output_location, MsgNone, MsgBruteForce) {
     // Exercise 3.1 : Set the variables for the grass_location message
-
+    const int id = FLAMEGPU->getVariable<int>("id");
+    const float x = FLAMEGPU->getVariable<float>("x");
+    const float y = FLAMEGPU->getVariable<float>("y");
+    FLAMEGPU->message_out.setVariable<int>("id", id);
+    FLAMEGPU->message_out.setVariable<float>("x", x);
+    FLAMEGPU->message_out.setVariable<float>("y", y);
     return ALIVE;
 }
 
 FLAMEGPU_AGENT_FUNCTION(grass_eaten, MsgBruteForce, MsgBruteForce) {
     // Exercise 3.2 : TODO: Describe exercise
 
+    const float grass_x = FLAMEGPU->getVariable<float>("x");
+    const float grass_y = FLAMEGPU->getVariable<float>("y");
+
+    int prey_id = -1;
+    float closest_prey = GRASS_EAT_DISTANCE;
+    int eaten = 0;
+
+    // Iterate predator_location messages to find the closest predator
+    for (const auto& msg : FLAMEGPU->message_in) {
+        // Fetch location of prey
+        const float prey_x = msg.getVariable<float>("x");
+        const float prey_y = msg.getVariable<float>("y");
+
+        // Check if the two preys are within interaction radius
+        const float dx = prey_x - prey_x;
+        const float dy = prey_y - prey_y;
+        const float distance = sqrt(dx*dx + dy*dy);
+
+        if (distance < closest_prey) {
+            prey_id = msg.getVariable<int>("id");
+            closest_prey= distance;
+            eaten = 1;
+        }
+    }
+
+    if (eaten) {
+        // Add grass eaten message
+        FLAMEGPU->message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
+        FLAMEGPU->message_out.setVariable<int>("prey_id", prey_id);
+       
+        // Update grass agent variables
+        FLAMEGPU->setVariable<int>("dead_cycles", 0);
+        FLAMEGPU->setVariable<int>("available", 0);
+        FLAMEGPU->setVariable<float>("type", 3.0f);
+    }
+
     return ALIVE;
 }
 
 FLAMEGPU_AGENT_FUNCTION(grass_growth, MsgNone, MsgNone) {
     // Exercise 3.4 : TODO: Describe exercise 
+    const float dead_cycles = FLAMEGPU->getVariable<int>("dead_cycles");
+    if (dead_cycles == GRASS_REGROW_CYCLES) {
+        int cycle_start = 0;
+        FLAMEGPU->setVariable<int>("dead_cycles", cycle_start);
+        FLAMEGPU->setVariable<int>("available", 1);
+        FLAMEGPU->setVariable<float>("type", 2.0f);
+    } 
+
+    const int available = FLAMEGPU->getVariable<int>("available");
+    if (!available) {
+        FLAMEGPU->setVariable<int>("dead_cycles", dead_cycles + 1);
+    }
 
     return ALIVE;
 }
@@ -582,7 +636,8 @@ int main(int argc, const char ** argv) {
 	env.add<float>("REPRODUCE_PREDATOR_PROB", 0.03f);
 	env.add<int>("GAIN_FROM_FOOD_PREDATOR", 50);
         env.add<int>("NUM_PREDATORS", 400);
-        //env.add<int>("NUM_PREY", 800);
+        env.add<int>("NUM_PREY", 800);
+        env.add<int>("NUM_GRASS", 0);
 	//env.add("GAIN_FROM_FOOD_PREY", 50);
 	//env.add("GRASS_REGROW_CYCLES", 100);
      
@@ -654,8 +709,8 @@ int main(int argc, const char ** argv) {
     std::uniform_real_distribution<> floatDist(-1.0f, 1.0f);
     std::uniform_real_distribution<> predLifeDist(0, 40);
     std::uniform_real_distribution<> preyLifeDist(0, 50);
+
     int numPredators = env.get<int>("NUM_PREDATORS");
-    std::cout << "Num predators: " << numPredators << std::endl;
     AgentPopulation predatorPopulation(model.Agent("predator"), numPredators);
     for (int i = 0; i < numPredators; i++) {
         AgentInstance predator = predatorPopulation.getNextInstance();
@@ -671,10 +726,9 @@ int main(int argc, const char ** argv) {
     }
   
     // Initialise prey agents 
-   // int numPrey =  800; // env.get<int>("NUM_PREY");
-    //std::cout << "Num prey: " << numPrey << std::endl;
-    AgentPopulation preyPopulation(model.Agent("prey"), 800);
-    for (int i = 0; i < 800; i++) {
+    int numPrey = env.get<int>("NUM_PREY");
+    AgentPopulation preyPopulation(model.Agent("prey"), numPrey);
+    for (int i = 0; i < numPrey; i++) {
         AgentInstance prey = preyPopulation.getNextInstance();
         prey.setVariable<int>("id", i);
         prey.setVariable<float>("x", floatDist(gen));
@@ -685,6 +739,20 @@ int main(int argc, const char ** argv) {
         prey.setVariable<float>("steer_y", 0.0f);
         prey.setVariable<float>("type", 1.0f);
 	prey.setVariable<int>("life", preyLifeDist(gen));
+    }
+
+    // Initialise grass agents
+    int numGrass = env.get<int>("NUM_GRASS");
+    AgentPopulation grassPopulation(model.Agent("grass"), numGrass);
+    for (int i = 0; i < numGrass; i++) {
+        AgentInstance grass = grassPopulation.getNextInstance();
+        grass.setVariable<int>("id", i);
+        grass.setVariable<float>("x", floatDist(gen));
+        grass.setVariable<float>("y", floatDist(gen));
+        grass.setVariable<float>("type", 2.0f);
+        grass.setVariable<int>("dead_cycles", 0);
+        grass.setVariable<int>("available", 1);
+        
     }
 
     cuda_model.setPopulationData(predatorPopulation);
