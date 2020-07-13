@@ -21,9 +21,6 @@
 #define GRASS_EAT_DISTANCE 0.02f
 #define GRASS_REGROW_CYCLES 100
 #define GAIN_FROM_FOOD_PREY 75
-//#define REPRODUCE_PREY_PROB 0.05f
-//#define REPRODUCE_PREDATOR_PROB 0.03f
-//#define GAIN_FROM_FOOD_PREDATOR 50
 
 typedef struct CSVRow {
     int preyPop;
@@ -419,7 +416,7 @@ FLAMEGPU_AGENT_FUNCTION(prey_eat_or_starve, MsgBruteForce, MsgNone) {
         }
     }
 
-    // If the life has reduced to 0 then the prey should die or starvation
+    // If the life has reduced to 0 then the prey should die or starvation 
     if (FLAMEGPU->getVariable<int>("life") < 1)
         isDead = 1;
 
@@ -516,7 +513,6 @@ FLAMEGPU_AGENT_FUNCTION(grass_growth, MsgNone, MsgNone) {
         FLAMEGPU->setVariable<int>("dead_cycles", 0);
         FLAMEGPU->setVariable<int>("available", 1);
         FLAMEGPU->setVariable<float>("type", 2.0f);
-        printf("Grass regrown");
     } 
 
     const int available = FLAMEGPU->getVariable<int>("available");
