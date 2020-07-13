@@ -636,8 +636,8 @@ int main(int argc, const char ** argv) {
 	env.add<float>("REPRODUCE_PREDATOR_PROB", 0.03f);
 	env.add<int>("GAIN_FROM_FOOD_PREDATOR", 50);
         env.add<int>("NUM_PREDATORS", 400);
-        env.add<int>("NUM_PREY", 800);
-        env.add<int>("NUM_GRASS", 0);
+        //env.add<int>("NUM_PREY", 800);
+        //env.add<int>("NUM_GRASS", 0);
 	//env.add("GAIN_FROM_FOOD_PREY", 50);
 	//env.add("GRASS_REGROW_CYCLES", 100);
      
@@ -726,7 +726,7 @@ int main(int argc, const char ** argv) {
     }
   
     // Initialise prey agents 
-    int numPrey = env.get<int>("NUM_PREY");
+    int numPrey = 800;//env.get<int>("NUM_PREY");
     AgentPopulation preyPopulation(model.Agent("prey"), numPrey);
     for (int i = 0; i < numPrey; i++) {
         AgentInstance prey = preyPopulation.getNextInstance();
@@ -742,18 +742,18 @@ int main(int argc, const char ** argv) {
     }
 
     // Initialise grass agents
-    int numGrass = env.get<int>("NUM_GRASS");
-    AgentPopulation grassPopulation(model.Agent("grass"), numGrass);
-    for (int i = 0; i < numGrass; i++) {
-        AgentInstance grass = grassPopulation.getNextInstance();
-        grass.setVariable<int>("id", i);
-        grass.setVariable<float>("x", floatDist(gen));
-        grass.setVariable<float>("y", floatDist(gen));
-        grass.setVariable<float>("type", 2.0f);
-        grass.setVariable<int>("dead_cycles", 0);
-        grass.setVariable<int>("available", 1);
-        
-    }
+//    int numGrass = env.get<int>("NUM_GRASS");
+//    AgentPopulation grassPopulation(model.Agent("grass"), numGrass);
+//    for (int i = 0; i < numGrass; i++) {
+//        AgentInstance grass = grassPopulation.getNextInstance();
+//        grass.setVariable<int>("id", i);
+//        grass.setVariable<float>("x", floatDist(gen));
+//        grass.setVariable<float>("y", floatDist(gen));
+//        grass.setVariable<float>("type", 2.0f);
+//        grass.setVariable<int>("dead_cycles", 0);
+//        grass.setVariable<int>("available", 1);
+//        
+//    }
 
     cuda_model.setPopulationData(predatorPopulation);
     cuda_model.setPopulationData(preyPopulation);
