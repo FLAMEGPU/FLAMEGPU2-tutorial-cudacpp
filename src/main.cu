@@ -423,25 +423,9 @@ FLAMEGPU_AGENT_FUNCTION(prey_eaten, MsgBruteForce, MsgBruteForce) {
 }
 
 FLAMEGPU_AGENT_FUNCTION(prey_eat_or_starve, MsgBruteForce, MsgNone) {
-    // Exercise 3.3 : TODO: Describe exercise 
-    int isDead = 0;
-    const int id = FLAMEGPU->getVariable<int>("id");
-    const int life = FLAMEGPU->getVariable<int>("life");
+    // Exercise 3.3
 
-    // Iterate the grass eaten messages 
-    for (const auto& msg : FLAMEGPU->message_in)
-    {
-        // If the grass eaten message indicates that this prey ate some grass then increase the preys life by adding energy
-        if (id == msg.getVariable<int>("prey_id")) {
-            FLAMEGPU->setVariable<int>("life", life + GAIN_FROM_FOOD_PREY);
-        }
-    }
-
-    // If the life has reduced to 0 then the prey should die or starvation 
-    if (FLAMEGPU->getVariable<int>("life") < 1)
-        isDead = 1;
-
-    return isDead ? DEAD : ALIVE;
+    return  ALIVE;
 }
 
 FLAMEGPU_AGENT_FUNCTION(prey_reproduction, MsgNone, MsgNone) {
@@ -473,74 +457,17 @@ FLAMEGPU_AGENT_FUNCTION(prey_reproduction, MsgNone, MsgNone) {
 // Grass functions
 FLAMEGPU_AGENT_FUNCTION(grass_output_location, MsgNone, MsgBruteForce) {
     // Exercise 3.1 : Set the variables for the grass_location message
-    const int id = FLAMEGPU->getVariable<int>("id");
-    const float x = FLAMEGPU->getVariable<float>("x");
-    const float y = FLAMEGPU->getVariable<float>("y");
-    FLAMEGPU->message_out.setVariable<int>("id", id);
-    FLAMEGPU->message_out.setVariable<float>("x", x);
-    FLAMEGPU->message_out.setVariable<float>("y", y);
     return ALIVE;
 }
 
 FLAMEGPU_AGENT_FUNCTION(grass_eaten, MsgBruteForce, MsgBruteForce) {
-    // Exercise 3.2 : TODO: Describe exercise
+    // Exercise 3.2
 
-    const float grass_x = FLAMEGPU->getVariable<float>("x");
-    const float grass_y = FLAMEGPU->getVariable<float>("y");
-    int available = FLAMEGPU->getVariable<int>("available");
-    if (available) { 
-
-        int prey_id = -1;
-        float closest_prey = GRASS_EAT_DISTANCE;
-        int eaten = 0;
-
-        // Iterate predator_location messages to find the closest predator
-        for (const auto& msg : FLAMEGPU->message_in) {
-            // Fetch location of prey
-            const float prey_x = msg.getVariable<float>("x");
-            const float prey_y = msg.getVariable<float>("y");
-
-            // Check if the two preys are within interaction radius
-            const float dx = grass_x - prey_x;
-            const float dy = grass_y - prey_y;
-            const float distance = sqrt(dx*dx + dy*dy);
-
-            if (distance < closest_prey) {
-                prey_id = msg.getVariable<int>("id");
-                closest_prey= distance;
-                eaten = 1;
-            }
-        }
-
-        if (eaten) {
-            // Add grass eaten message
-            FLAMEGPU->message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
-            FLAMEGPU->message_out.setVariable<int>("prey_id", prey_id);
-           
-            // Update grass agent variables
-            FLAMEGPU->setVariable<int>("dead_cycles", 0);
-            FLAMEGPU->setVariable<int>("available", 0);
-            FLAMEGPU->setVariable<float>("type", 3.0f);
-        }
-    }
     return ALIVE;
 }
 
 FLAMEGPU_AGENT_FUNCTION(grass_growth, MsgNone, MsgNone) {
-    // Exercise 3.4 : TODO: Describe exercise 
-    const float dead_cycles = FLAMEGPU->getVariable<int>("dead_cycles");
-    int new_dead_cycles = dead_cycles + 1;
-    if (dead_cycles == GRASS_REGROW_CYCLES) {
-        FLAMEGPU->setVariable<int>("dead_cycles", 0);
-        FLAMEGPU->setVariable<int>("available", 1);
-        FLAMEGPU->setVariable<float>("type", 2.0f);
-    } 
-
-    const int available = FLAMEGPU->getVariable<int>("available");
-    if (available == 0) {
-        FLAMEGPU->setVariable<int>("dead_cycles", new_dead_cycles);
-    } 
-
+    // Exercise 3.4 
     return ALIVE;
 }
 
