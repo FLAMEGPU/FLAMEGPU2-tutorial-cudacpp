@@ -65,7 +65,14 @@ CSVRow loadPopulations() {
     return initialPopulations;
 }
 
-// FLAMEGPU_AGENT_FUNCTION(function_name, input_message_type, output_message_type)
+/*
+   The following section of code defines the agent function behaviours in the following format:
+
+   FLAMEGPU_AGENT_FUNCTION(function_name, input_message_type, output_message_type) {
+       behaviour definition goes here
+   }
+
+*/
 
 // Predator functions
 FLAMEGPU_AGENT_FUNCTION(pred_output_location, MsgNone, MsgBruteForce) {
@@ -661,16 +668,9 @@ int main(int argc, const char ** argv) {
      */
     
         EnvironmentDescription &env = model.Environment();
-        // TODO: Move defines to here
         env.add<float>("REPRODUCE_PREY_PROB", 0.05f);
 	env.add<float>("REPRODUCE_PREDATOR_PROB", 0.03f);
 	env.add<int>("GAIN_FROM_FOOD_PREDATOR", 50);
-        //env.add<int>("NUM_PREDATORS", 400);
-        //env.add<int>("NUM_PREY", 800);
-        //env.add<int>("NUM_GRASS", 0);
-	//env.add("GAIN_FROM_FOOD_PREY", 50);
-	//env.add("GRASS_REGROW_CYCLES", 100);
-     
 
     /**
      * Control flow
@@ -744,7 +744,7 @@ int main(int argc, const char ** argv) {
     CSVRow initialPops = loadPopulations();
 
     // Initialise predator agents
-    int numPredators = initialPops.predatorPop;//env.get<int>("NUM_PREDATORS");
+    int numPredators = initialPops.predatorPop;
     AgentPopulation predatorPopulation(model.Agent("predator"), numPredators);
     for (int i = 0; i < numPredators; i++) {
         AgentInstance predator = predatorPopulation.getNextInstance();
@@ -760,7 +760,7 @@ int main(int argc, const char ** argv) {
     }
   
     // Initialise prey agents 
-    int numPrey = initialPops.preyPop;//env.get<int>("NUM_PREY");
+    int numPrey = initialPops.preyPop;
     AgentPopulation preyPopulation(model.Agent("prey"), numPrey);
     for (int i = 0; i < numPrey; i++) {
         AgentInstance prey = preyPopulation.getNextInstance();
@@ -776,7 +776,7 @@ int main(int argc, const char ** argv) {
     }
 
     // Initialise grass agents
-    int numGrass = initialPops.grassPop;//env.get<int>("NUM_GRASS");
+    int numGrass = initialPops.grassPop;
     AgentPopulation grassPopulation(model.Agent("grass"), numGrass);
     for (int i = 0; i < numGrass; i++) {
         AgentInstance grass = grassPopulation.getNextInstance();
