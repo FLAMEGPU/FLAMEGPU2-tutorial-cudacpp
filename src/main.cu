@@ -51,6 +51,20 @@ FLAMEGPU_EXIT_FUNCTION(savePopulationData) {
     std::cout << "Data saved" << std::endl;
 }
 
+CSVRow loadPopulations() {
+    std::ifstream inputFile("iterations/initial_populations.txt");
+    CSVRow initialPopulations;
+    initialPopulations.preyPop = 800;
+    initialPopulations.predatorPop = 400;
+    initialPopulations.grassPop = 0;
+    if (inputFile.is_open()) {
+       inputFile >> initialPopulations.preyPop >> initialPopulations.predatorPop >> initialPopulations.grassPop; 
+    } else { 
+        std::cout << "Warning: Failed to open initial_populations.txt, using default population values" << std::endl;
+    }
+    return initialPopulations;
+}
+
 // FLAMEGPU_AGENT_FUNCTION(function_name, input_message_type, output_message_type)
 
 // Predator functions
@@ -719,14 +733,18 @@ int main(int argc, const char ** argv) {
 	printf("XML Input was empty!");
     }
 
-    // Initialise predator agents
+    // Initialise random number generators
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> floatDist(-1.0f, 1.0f);
     std::uniform_real_distribution<> predLifeDist(0, 40);
     std::uniform_real_distribution<> preyLifeDist(0, 50);
 
-    int numPredators = 400;//env.get<int>("NUM_PREDATORS");
+    // Load initial population data
+    CSVRow initialPops = loadPopulations();
+
+    // Initialise predator agents
+    int numPredators = initialPops.predatorPop;//env.get<int>("NUM_PREDATORS");
     AgentPopulation predatorPopulation(model.Agent("predator"), numPredators);
     for (int i = 0; i < numPredators; i++) {
         AgentInstance predator = predatorPopulation.getNextInstance();
@@ -742,7 +760,7 @@ int main(int argc, const char ** argv) {
     }
   
     // Initialise prey agents 
-    int numPrey = 800;//env.get<int>("NUM_PREY");
+    int numPrey = initialPops.preyPop;//env.get<int>("NUM_PREY");
     AgentPopulation preyPopulation(model.Agent("prey"), numPrey);
     for (int i = 0; i < numPrey; i++) {
         AgentInstance prey = preyPopulation.getNextInstance();
@@ -758,7 +776,7 @@ int main(int argc, const char ** argv) {
     }
 
     // Initialise grass agents
-    int numGrass = 2000;//env.get<int>("NUM_GRASS");
+    int numGrass = initialPops.grassPop;//env.get<int>("NUM_GRASS");
     AgentPopulation grassPopulation(model.Agent("grass"), numGrass);
     for (int i = 0; i < numGrass; i++) {
         AgentInstance grass = grassPopulation.getNextInstance();
