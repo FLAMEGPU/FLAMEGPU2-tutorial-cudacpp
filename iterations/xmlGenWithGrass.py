@@ -1,6 +1,6 @@
 import sys
 
-def generateXMLFile(num_prey, num_predators, reproduce_prey_prob, reproduce_predator_prob, gain_from_food_predator):
+def generateXMLFile(num_prey, num_predators, num_grass, reproduce_prey_prob, reproduce_predator_prob, gain_from_food_predator):
   with open('0.xml', 'w') as f:
     f.write('<states>\n')
     f.write('<itno>0</itno>\n')
@@ -12,12 +12,12 @@ def generateXMLFile(num_prey, num_predators, reproduce_prey_prob, reproduce_pred
     f.write('</states>')
     print ("XML file generated successfully!")
   with open('initial_populations.txt', 'w') as f:
-    f.write('' + num_prey + ' ' + num_predators + ' ' + '0');
+    f.write('' + num_prey + ' ' + num_predators + ' ' + num_grass)
 
 
-if (len(sys.argv) != 6):
-  print ("Correct usage: xmlGen.py num_prey num_predators reproduce_prey_prob reproduce_predator_prob gain_from_food_predator\n")
+if (len(sys.argv) != 7):
+  print ("Correct usage: xmlGen.py num_prey num_predators num_grass reproduce_prey_prob reproduce_predator_prob gain_from_food_predator\n")
 else:
-  generateXMLFile(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])  
+  generateXMLFile(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])  
 
 
