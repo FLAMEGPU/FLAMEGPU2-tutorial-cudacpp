@@ -651,7 +651,7 @@ int main(int argc, const char ** argv) {
         env.add<float>("REPRODUCE_PREY_PROB", 0.05f);
 	env.add<float>("REPRODUCE_PREDATOR_PROB", 0.03f);
 	env.add<int>("GAIN_FROM_FOOD_PREDATOR", 50);
-        env.add<int>("NUM_PREDATORS", 400);
+        //env.add<int>("NUM_PREDATORS", 400);
         //env.add<int>("NUM_PREY", 800);
         //env.add<int>("NUM_GRASS", 0);
 	//env.add("GAIN_FROM_FOOD_PREY", 50);
@@ -726,7 +726,7 @@ int main(int argc, const char ** argv) {
     std::uniform_real_distribution<> predLifeDist(0, 40);
     std::uniform_real_distribution<> preyLifeDist(0, 50);
 
-    int numPredators = env.get<int>("NUM_PREDATORS");
+    int numPredators = 400;//env.get<int>("NUM_PREDATORS");
     AgentPopulation predatorPopulation(model.Agent("predator"), numPredators);
     for (int i = 0; i < numPredators; i++) {
         AgentInstance predator = predatorPopulation.getNextInstance();

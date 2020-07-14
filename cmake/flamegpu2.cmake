@@ -2,7 +2,7 @@ include(FetchContent)
 cmake_policy(SET CMP0079 NEW)
 
 # Allow the user to configure the version, until a stable release this should remain as master
-set(FLAMEGPU2_Version "curve_bigger" CACHE STRING "Git branch or tag to use")
+set(FLAMEGPU2_Version "74133a7b1b0317770355f761b00075256c19f72b" CACHE STRING "Git branch or tag to use")
 
 # Always use most recent, simply recommend users that they may wish to do otherwise
 FetchContent_Declare(
