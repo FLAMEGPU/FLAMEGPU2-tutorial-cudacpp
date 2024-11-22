@@ -25,12 +25,11 @@ Building FLAME GPU has the following requirements.
 There are also optional dependencies which are required for some components, such as Documentation or Python bindings.
 
 + [CMake](https://cmake.org/download/) `>= 3.18`
-+ [CUDA](https://developer.nvidia.com/cuda-downloads) `>= 11.0` and a Compute Capability `>= 3.5` NVIDIA GPU.
-  + CUDA `>= 10.0` currently works, but support will be removed in a future release.
++ [CUDA](https://developer.nvidia.com/cuda-downloads) `>= 11.0` and a [Compute Capability](https://developer.nvidia.com/cuda-gpus) `>= 3.5` NVIDIA GPU.
 + C++17 capable C++ compiler (host), compatible with the installed CUDA version
-  + [Microsoft Visual Studio 2019](https://visualstudio.microsoft.com/) (Windows)
-  + [make](https://www.gnu.org/software/make/) and [GCC](https://gcc.gnu.org/) `>= 7`
-  + Older C++ compilers which support C++14 may currently work, but support will be dropped in a future release.
+  + [Microsoft Visual Studio 2019 or 2022](https://visualstudio.microsoft.com/) (Windows)
+    + *Note:* Visual Studio must be installed before the CUDA toolkit is installed. See the [CUDA installation guide for Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html) for more information.
+  + [make](https://www.gnu.org/software/make/) and [GCC](https://gcc.gnu.org/) `>= 8.1` (Linux)
 + [git](https://git-scm.com/)
 
 Optionally:
@@ -70,7 +69,7 @@ For example, to configure CMake for `Release` builds, for consumer Pascal GPUs (
 mkdir -p build && cd build
 
 # Configure CMake from the command line passing configure-time options. 
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCUDA_ARCH=61
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=61
 
 # Build the target(s)
 cmake --build . --target all -j 8
@@ -93,7 +92,7 @@ mkdir build
 cd build
 
 REM Configure CMake from the command line, specifying the -A and -G options. Alternatively use the GUI
-cmake .. -A x64 -G "Visual Studio 16 2019" -DCUDA_ARCH=61
+cmake .. -A x64 -G "Visual Studio 17 2022" -DCMAKE_CUDA_ARCHITECTURES=61
 
 REM You can then open Visual Studio manually from the .sln file, or via:
 cmake --open . 
@@ -103,16 +102,17 @@ cmake --build . --config Release --target ALL_BUILD --verbose
 
 #### CMake Configuration Options
 
-| Option                   | Value             | Description                                                                                                |
-| ------------------------ | ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| `FLAMEGPU_VERSION`       | `v2.0.0-alpha.1`  | Git tag or commit hash of the [FLAMEGPU/FLAMEGPU2](https://github.com/FLAMEGPU/FLAMEGPU2) repository to be fetched |
-| `CMAKE_BUILD_TYPE`       | `Release`/`Debug` | Select the build configuration for single-target generators such as `make`                                 |
-| `SEATBELTS`              | `ON`/`OFF`        | Enable / Disable additional runtime checks which harm performance but increase usability. Default `ON`     |
-| `CUDA_ARCH`              | `"52 60 70 80"`   | Select [CUDA Compute Capabilities](https://developer.nvidia.com/cuda-gpus) to build/optimise for, as a space or `;` separated list. Defaults to `""` |
-| `VISUALISATION`          | `ON`/`OFF`        | Enable Visualisation. Default `OFF`.                                                                       |
-| `VISUALISATION_ROOT`     | `path/to/vis`     | Provide a path to a local copy of the [FLAMEGPU/FLAMEGPU2-visualiser](https://github.com/FLAMEGPU/FLAMEGPU2-visualiser) repository |
-| `USE_NVTX`               | `ON`/`OFF`        | Enable NVTX markers for improved profiling. Default `OFF`                                                  |
-| `WARNINGS_AS_ERRORS`     | `ON`/`OFF`        | Promote compiler/tool warnings to errors are build time. Default `OFF`                                     |
+| Option                               | Value                       | Description                                                                                                |
+| -------------------------------------| --------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `CMAKE_BUILD_TYPE`                   | `Release` / `Debug` / `MinSizeRel` / `RelWithDebInfo` | Select the build configuration for single-target generators such as `make`   |
+| `CMAKE_CUDA_ARCHITECTURES`           | e.g `60`, `"60;70"`         | [CUDA Compute Capabilities][cuda-CC] to build/optimise for, as a `;` separated list. See [CMAKE_CUDA_ARCHITECTURES][cmake-CCA]. Defaults to `all-major` or equivalent. Alternatively use the `CUDAARCHS` environment variable. |
+| `FLAMEGPU_SEATBELTS`                 | `ON`/`OFF`                  | Enable / Disable additional runtime checks which harm performance but increase usability. Default `ON`     |
+| `FLAMEGPU_VISUALISATION`             | `ON`/`OFF`                  | Enable Visualisation. Default `OFF`.                                                                       |
+| `FLAMEGPU_VISUALISATION_ROOT`        | `path/to/vis`               | Provide a path to a local copy of the visualisation repository.                                            |
+| `FLAMEGPU_ENABLE_NVTX`               | `ON`/`OFF`                  | Enable NVTX markers for improved profiling. Default `OFF`                                                  |
+| `FLAMEGPU_WARNINGS_AS_ERRORS`        | `ON`/`OFF`                  | Promote compiler/tool warnings to errors are build time. Default `OFF`                                     |
+| `FLAMEGPU_SHARE_USAGE_STATISTICS`    | `ON`/`OFF`                  | Share usage statistics ([telemetry](https://docs.flamegpu.com/guide/telemetry)) to support evidencing usage/impact of the software. Default `ON`. |
+| `FLAMEGPU_TELEMETRY_SUPPRESS_NOTICE` | `ON`/`OFF`                  | Suppress notice encouraging telemetry to be enabled, which is emitted once per binary execution if telemetry is disabled. Defaults to `OFF`, or the value of a system environment variable of the same name. |
 
 See the [FLAMEGPU/FLAMEGPU2 Readme](https://github.com/FLAMEGPU/FLAMEGPU2#cmake-configuration-options) for a full list of CMake options for the main repository.
 
@@ -139,3 +139,26 @@ For a full list of available targets, run the following after configuring CMake:
 ```bash
 cmake --build . --target help
 ```
+
+## Usage Statistics (Telemetry)
+
+Support for academic software is dependant on evidence of impact. Without evidence it is difficult/impossible to justify investment to add features and provide maintenance. We collect a minimal amount of anonymous usage data so that we can gather usage statistics that enable us to continue to develop the software under a free and permissible licence.
+
+Information is collected when a simulation, ensemble or test suite run have completed.
+
+The [TelemetryDeck](https://telemetrydeck.com/) service is used to store telemetry data. 
+All data is sent to their API endpoint of https://nom.telemetrydeck.com/v1/ via https. For more details please review the [TelmetryDeck privacy policy](https://telemetrydeck.com/privacy/).
+
+We do not collect any personal data such as usernames, email addresses or hardware identifiers but we do generate a random user identifier. This identifier is salted and hashed by Telemetry deck.
+
+More information can be found in the [FLAMEGPU documentation](https://docs.flamegpu.com/guide/telemetry).
+
+Telemetry is enabled by default, but can be opted out by:
+
++ Setting an environment variable `FLAMEGPU_SHARE_USAGE_STATISTICS` to `OFF`, `false` or `0` (case insensitive).
+  + If this is set during the first CMake configuration it will be used for all subsequent CMake configurations until the CMake Cache is cleared, or it is manually changed.
+  + If this is set during simulation, ensemble or test execution (i.e. runtime) it will also be respected
++ Setting the `FLAMEGPU_SHARE_USAGE_STATISTICS` CMake option to `OFF` or another false-like CMake value, which will default telemetry to be off for executions.
++ Programmatically overriding the default value by:
+  + Calling `flamegpu::io::Telemetry::disable()` or `pyflamegpu.Telemetry.disable()` prior to the construction of any `Simulation`, `CUDASimulation` or `CUDAEnsemble` objects.
+  + Setting the `telemetry` config property of a `Simulation.Config`, `CUDASimulation.SimulationConfig` or `CUDAEnsemble.EnsembleConfig` to `false`.
