@@ -24,21 +24,30 @@ Only documentation can be built without the required dependencies (however Doxyg
 Building FLAME GPU has the following requirements. 
 There are also optional dependencies which are required for some components, such as Documentation or Python bindings.
 
-+ [CMake](https://cmake.org/download/) `>= 3.18`
-+ [CUDA](https://developer.nvidia.com/cuda-downloads) `>= 11.0` and a [Compute Capability](https://developer.nvidia.com/cuda-gpus) `>= 3.5` NVIDIA GPU.
-+ C++17 capable C++ compiler (host), compatible with the installed CUDA version
-  + [Microsoft Visual Studio 2019 or 2022](https://visualstudio.microsoft.com/) (Windows)
++ [CMake](https://cmake.org/download/) `>= 3.25.2`
++ [CUDA](https://developer.nvidia.com/cuda-downloads) `>= 12.0` (Linux) or `>= 12.4` (Windows)
+  + FLAME GPU aims to support the 2 most recent major CUDA versions, currently `12` and `13`.
+  + For native Windows builds, CUDA `12.0-12.3` may work for some but not all parts of FLAME GPU due to c++20 compilation issues and MSVC support.
+  + A [Compute Capability](https://developer.nvidia.com/cuda-gpus) `>= 5.0` (CUDA 12.x) or `>= 7.5` (CUDA 13.x) NVIDIA GPU is required for execution.
++ C++20 capable C++ compiler (host), compatible with the installed CUDA version
+  + [Microsoft Visual Studio 2022](https://visualstudio.microsoft.com/) (Windows)
     + *Note:* Visual Studio must be installed before the CUDA toolkit is installed. See the [CUDA installation guide for Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html) for more information.
-  + [make](https://www.gnu.org/software/make/) and [GCC](https://gcc.gnu.org/) `>= 8.1` (Linux)
+    + *Note:* Windows 11 SDK (10.0.22000.0) component is required within the Visual Studio (in latest versions this is default for C++ Desktop Development workloads even even on Windows 10). Windows 10 *must* be updated to build 19045 (22H2) or later to support this at runtime.
+  + [make](https://www.gnu.org/software/make/) and [GCC](https://gcc.gnu.org/) `>= 10` (Linux)
 + [git](https://git-scm.com/)
 
 Optionally:
 
 + [cpplint](https://github.com/cpplint/cpplint) for linting code
 + [Doxygen](http://www.doxygen.nl/) to build the documentation
-+ [Python](https://www.python.org/) `>= 3.6` for python integration
-+ [swig](http://www.swig.org/) `>= 4.0.2` for python integration
-  + Swig `4.x` will be automatically downloaded by CMake if not provided (if possible).
++ [Python](https://www.python.org/) `>= 3.10` for python integration
+  + With `setuptools`, `wheel`, `build` and optionally `venv` python packages installed
+  + On Windows, CUDA >= 12.4 is required for python integration
++ [swig](http://www.swig.org/) `>= 4.1.0` for python integration (with c++20 support)
+  + Swig >= `4.1.0` will be automatically downloaded by CMake if not provided (if possible).
+  + Swig `4.2.0` and `4.2.1` is known to encounter issues in some cases. Consider using an alternate SWIG version
++ MPI (e.g. [MPICH](https://www.mpich.org/), [OpenMPI](https://www.open-mpi.org/)) for distributed ensemble support
+  + MPI 3.0+ tested, older MPIs may work but not tested.
 + [FLAMEGPU2-visualiser](https://github.com/FLAMEGPU/FLAMEGPU2-visualiser) dependencies
   + [SDL](https://www.libsdl.org/)
   + [GLM](http://glm.g-truc.net/) *(consistent C++/GLSL vector maths functionality)*
@@ -162,3 +171,15 @@ Telemetry is enabled by default, but can be opted out by:
 + Programmatically overriding the default value by:
   + Calling `flamegpu::io::Telemetry::disable()` or `pyflamegpu.Telemetry.disable()` prior to the construction of any `Simulation`, `CUDASimulation` or `CUDAEnsemble` objects.
   + Setting the `telemetry` config property of a `Simulation.Config`, `CUDASimulation.SimulationConfig` or `CUDAEnsemble.EnsembleConfig` to `false`.
+
+  ## Authors and Acknowledgment
+
+See [Contributors](https://github.com/FLAMEGPU/FLAMEGPU2/graphs/contributors) for a list of contributors towards this project.
+
+If you use this software in your work, please cite DOI [10.5281/zenodo.5428984](https://doi.org/10.5281/zenodo.5428984). Release specific DOI are also provided via Zenodo.
+
+Alternatively, [CITATION.cff](https://github.com/FLAMEGPU/FLAMEGPU2/blob/master/CITATION.cff) provides citation metadata, which can also be accessed from [GitHub](https://github.com/FLAMEGPU/FLAMEGPU2).
+
+## License
+
+FLAME GPU 2 is available under a dual licence model. This repository is not included within the main library distribution and is licenced under only [AGPL-3.0-only license](https://github.com/FLAMEGPU/FLAMEGPU2-model-template-cpp/blob/master/LICENSE.MD) for open source usage.
