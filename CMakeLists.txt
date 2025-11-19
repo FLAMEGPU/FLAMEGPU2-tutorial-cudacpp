@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION VERSION 3.18 FATAL_ERROR)
+# Minimum CMake version 3.25.2 for CUDA --std=c++20
+cmake_minimum_required(VERSION 3.25.2...4.1.1 FATAL_ERROR)
 
 # Name the project and set languages
 project(flamegpu2_tutorial CUDA CXX)
