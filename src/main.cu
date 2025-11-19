@@ -470,8 +470,8 @@ FLAMEGPU_AGENT_FUNCTION(grass_growth, flamegpu::MessageNone, flamegpu::MessageNo
 
 
 int main(int argc, const char** argv) {
-    NVTX_RANGE("main");
-    NVTX_PUSH("ModelDescription");
+    flamegpu::util::nvtx::Range main_range{"main"};
+    flamegpu::util::nvtx::push("ModelDescription");
     flamegpu::ModelDescription model("Tutorial_PredatorPrey_Example");
 
     /**
@@ -479,30 +479,30 @@ int main(int argc, const char** argv) {
      */
 
     {   // Grass location message
-        flamegpu::MessageBruteForce::Description& message = model.newMessage("grass_location_message");
+        flamegpu::MessageBruteForce::Description message = model.newMessage("grass_location_message");
         message.newVariable<flamegpu::id_t>("id");
         message.newVariable<float>("x");
         message.newVariable<float>("y");
     }
     {   // Predator location message
-        flamegpu::MessageBruteForce::Description& message = model.newMessage("predator_location_message");
+        flamegpu::MessageBruteForce::Description message = model.newMessage("predator_location_message");
         message.newVariable<flamegpu::id_t>("id");
         message.newVariable<float>("x");
         message.newVariable<float>("y");
     }
     {   // Prey location message
-        flamegpu::MessageBruteForce::Description& message = model.newMessage("prey_location_message");
+        flamegpu::MessageBruteForce::Description message = model.newMessage("prey_location_message");
         message.newVariable<flamegpu::id_t>("id");
         message.newVariable<float>("x");
         message.newVariable<float>("y");
     }
     {   // Grass eaten message
-        flamegpu::MessageBruteForce::Description& message = model.newMessage("grass_eaten_message");
+        flamegpu::MessageBruteForce::Description message = model.newMessage("grass_eaten_message");
         message.newVariable<flamegpu::id_t>("id");
         message.newVariable<flamegpu::id_t>("prey_id");
     }
     {   // Prey eaten message
-        flamegpu::MessageBruteForce::Description& message = model.newMessage("prey_eaten_message");
+        flamegpu::MessageBruteForce::Description message = model.newMessage("prey_eaten_message");
         message.newVariable<flamegpu::id_t>("id");
         message.newVariable<flamegpu::id_t>("pred_id");
     }
@@ -513,7 +513,7 @@ int main(int argc, const char** argv) {
      */
 
     {   // Prey agent
-        flamegpu::AgentDescription& agent = model.newAgent("prey");
+        flamegpu::AgentDescription agent = model.newAgent("prey");
         agent.newVariable<float>("x");
         agent.newVariable<float>("y");
         agent.newVariable<float>("vx");
@@ -523,25 +523,25 @@ int main(int argc, const char** argv) {
         agent.newVariable<int>("life");
         agent.newVariable<float>("type")
             ;
-        auto& fn = agent.newFunction("prey_output_location", prey_output_location);
+        auto fn = agent.newFunction("prey_output_location", prey_output_location);
         fn.setMessageOutput("prey_location_message");
         agent.newFunction("prey_avoid_pred", prey_avoid_pred).setMessageInput("predator_location_message");
         agent.newFunction("prey_flock", prey_flock).setMessageInput("prey_location_message");
         agent.newFunction("prey_move", prey_move);
-        auto& function = agent.newFunction("prey_eaten", prey_eaten);
+        auto function = agent.newFunction("prey_eaten", prey_eaten);
         function.setMessageInput("predator_location_message");
         function.setMessageOutput("prey_eaten_message");
         function.setMessageOutputOptional(true);
         function.setAllowAgentDeath(true);
-        auto& fn_prey_eat_or_starve = agent.newFunction("prey_eat_or_starve", prey_eat_or_starve);
+        auto fn_prey_eat_or_starve = agent.newFunction("prey_eat_or_starve", prey_eat_or_starve);
         fn_prey_eat_or_starve.setMessageInput("grass_eaten_message");
         fn_prey_eat_or_starve.setAllowAgentDeath(true);
-        auto& fn_prey_reproduction = agent.newFunction("prey_reproduction", prey_reproduction);
+        auto fn_prey_reproduction = agent.newFunction("prey_reproduction", prey_reproduction);
         fn_prey_reproduction.setAgentOutput("prey", "default");
     }
 
     {   // Predator agent
-        flamegpu::AgentDescription& agent = model.newAgent("predator");
+        flamegpu::AgentDescription agent = model.newAgent("predator");
         agent.newVariable<float>("x");
         agent.newVariable<float>("y");
         agent.newVariable<float>("vx");
@@ -555,24 +555,24 @@ int main(int argc, const char** argv) {
         agent.newFunction("pred_follow_prey", pred_follow_prey).setMessageInput("prey_location_message");
         agent.newFunction("pred_avoid", pred_avoid).setMessageInput("predator_location_message");
         agent.newFunction("pred_move", pred_move);
-        auto& fn_pred_eat_or_starve = agent.newFunction("pred_eat_or_starve", pred_eat_or_starve);
+        auto fn_pred_eat_or_starve = agent.newFunction("pred_eat_or_starve", pred_eat_or_starve);
         fn_pred_eat_or_starve.setMessageInput("prey_eaten_message");
         fn_pred_eat_or_starve.setAllowAgentDeath(true);
-        auto& fn_pred_reproduction = agent.newFunction("pred_reproduction", pred_reproduction);
+        auto fn_pred_reproduction = agent.newFunction("pred_reproduction", pred_reproduction);
         fn_pred_reproduction.setAgentOutput("predator", "default");
     }
 
     {   // Grass agent
-        flamegpu::AgentDescription& agent = model.newAgent("grass");
+        flamegpu::AgentDescription agent = model.newAgent("grass");
         agent.newVariable<float>("x");
         agent.newVariable<float>("y");
         agent.newVariable<int>("dead_cycles");
         agent.newVariable<int>("available");
         agent.newVariable<float>("type");
-        auto& fn = agent.newFunction("grass_output_location", grass_output_location);
+        auto fn = agent.newFunction("grass_output_location", grass_output_location);
         fn.setMessageOutput("grass_location_message");
         fn.setMessageOutputOptional(true);
-        auto& fn_grass_eaten = agent.newFunction("grass_eaten", grass_eaten);
+        auto fn_grass_eaten = agent.newFunction("grass_eaten", grass_eaten);
         fn_grass_eaten.setMessageInput("prey_location_message");
         fn_grass_eaten.setMessageOutput("grass_eaten_message");
         fn_grass_eaten.setMessageOutputOptional(true);
@@ -585,7 +585,7 @@ int main(int argc, const char** argv) {
       * ENVIRONMENT VARIABLES
       */
 
-    flamegpu::EnvironmentDescription& env = model.Environment();
+    flamegpu::EnvironmentDescription env = model.Environment();
     env.newProperty<float>("REPRODUCE_PREY_PROB", 0.05f);
     env.newProperty<float>("REPRODUCE_PREDATOR_PROB", 0.03f);
     env.newProperty<int>("GAIN_FROM_FOOD_PREDATOR", 50);
@@ -594,38 +594,38 @@ int main(int argc, const char** argv) {
      * Control flow
      */
     {   // Layer #1
-        flamegpu::LayerDescription& layer = model.newLayer();
+        flamegpu::LayerDescription layer = model.newLayer();
         layer.addAgentFunction(prey_output_location);
         layer.addAgentFunction(pred_output_location);
         layer.addAgentFunction(grass_output_location);
     }
     {   // Layer #2
-        flamegpu::LayerDescription& layer = model.newLayer();
+        flamegpu::LayerDescription layer = model.newLayer();
         layer.addAgentFunction(pred_follow_prey);
         layer.addAgentFunction(prey_avoid_pred);
     }
     {   // Layer #3
-        flamegpu::LayerDescription& layer = model.newLayer();
+        flamegpu::LayerDescription layer = model.newLayer();
         layer.addAgentFunction(prey_flock);
         layer.addAgentFunction(pred_avoid);
     }
     {   // Layer #4
-        flamegpu::LayerDescription& layer = model.newLayer();
+        flamegpu::LayerDescription layer = model.newLayer();
         layer.addAgentFunction(prey_move);
         layer.addAgentFunction(pred_move);
     }
     {   // Layer #5
-        flamegpu::LayerDescription& layer = model.newLayer();
+        flamegpu::LayerDescription layer = model.newLayer();
         layer.addAgentFunction(grass_eaten);
         layer.addAgentFunction(prey_eaten);
     }
     {   // Layer #6
-        flamegpu::LayerDescription& layer = model.newLayer();
+        flamegpu::LayerDescription layer = model.newLayer();
         layer.addAgentFunction(prey_eat_or_starve);
         layer.addAgentFunction(pred_eat_or_starve);
     }
     {   // Layer #7
-        flamegpu::LayerDescription& layer = model.newLayer();
+        flamegpu::LayerDescription layer = model.newLayer();
         layer.addAgentFunction(pred_reproduction);
         layer.addAgentFunction(prey_reproduction);
         layer.addAgentFunction(grass_growth);
@@ -633,14 +633,14 @@ int main(int argc, const char** argv) {
 
     model.addStepFunction(recordPopulation);
     model.addExitFunction(savePopulationData);
-    NVTX_POP();
+    flamegpu::util::nvtx::pop();
 
     /**
      * Create Model Runner
      */
-    NVTX_PUSH("CUDAAgentModel creation");
+    flamegpu::util::nvtx::push("CUDAAgentModel creation");
     flamegpu::CUDASimulation cuda_model(model);
-    NVTX_POP();
+    flamegpu::util::nvtx::pop();
 
     /**
      * Initialisation

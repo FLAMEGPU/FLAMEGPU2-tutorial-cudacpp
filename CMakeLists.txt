@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION VERSION 3.18 FATAL_ERROR)
+# Minimum CMake version 3.25.2 for CUDA --std=c++20
+cmake_minimum_required(VERSION 3.25.2...4.1.1 FATAL_ERROR)
 
 # Name the project and set languages
 project(flamegpu2_tutorial CUDA CXX)
@@ -8,7 +9,7 @@ option(VISUALISATION "Enable visualisation support" OFF)
 
 # Optionaly set the version of flamegpu which should be used.
 # Use a branch name such as `master`, or a tagged version such as `v2.0.0-alpha` 
-set(FLAMEGPU_VERSION "v2.0.0-rc.2" CACHE STRING "Git branch or tag to use")
+set(FLAMEGPU_VERSION "v2.0.0-rc.4" CACHE STRING "Git branch or tag to use")
 
 # Our core dependency is FLAMEGPU2 lib, first lets find it
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/flamegpu2.cmake)
